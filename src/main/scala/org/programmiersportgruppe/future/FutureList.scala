@@ -10,7 +10,7 @@ import scala.concurrent.Future
 object FutureList {
     def induce[T](head: T, f: (T) => Future[Option[T]]): FutureList[T] =
 
-        Cons(head, f(head)
+        LazyCons(head, () => f(head)
             .map((nHead: Option[T]) => nHead.map(induce(_, f)).getOrElse(FNil)))
 
 
@@ -36,7 +36,7 @@ trait FutureList[+T] {
     def take(n: Int): FutureList[T] = {
         if (n == 0)
             return FNil
-        Cons(head, tail.map(_.take(n - 1)))
+        LazyCons(head, () => tail.map(_.take(n - 1)))
     }
 
     def takeWhile(predicate: T => Boolean): FutureList[T] = {
@@ -45,8 +45,9 @@ trait FutureList[+T] {
         Cons(head, tail.map(_.takeWhile(predicate)))
     }
 
-    def map[U](f: T => U): FutureList[U] =
-        Cons(f(head), tail.map(_.map(f)))
+    def map[U](f: T => U): FutureList[U] = {
+        LazyCons(f(head), () => tail.map(_.map(f)))
+    }
 
 
     def filter(predicate: T => Boolean): Future[FutureList[T]] = {
@@ -60,9 +61,9 @@ trait FutureList[+T] {
 
     def flatten[B](implicit asTraversable: T => GenTraversableOnce[B]): Future[FutureList[B]] = {
         val tHead: GenTraversableOnce[B] = asTraversable(head)
-        tHead.foldRight(tail.flatMap(_.flatten))((e: B, acc) => Future {
-            Cons(e, acc)
-        })
+        tHead.foldRight(() => tail.flatMap(_.flatten))((e: B, acc) => ()=> Future {
+            LazyCons(e, acc)
+        })()
     }
 
     def sequence(): Future[Seq[T]] = this match {
