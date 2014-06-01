@@ -1,11 +1,9 @@
 package org.programmiersportgruppe.future
 
-import org.scalatest.FunSuite
 import FutureList._
-import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-class FutureListTest extends FunSuite {
+class FutureListTest extends FutureTest {
 
 
     test("Can create future list with cons and get sequence") {
@@ -60,8 +58,5 @@ class FutureListTest extends FunSuite {
 
         assertResult(Seq(1, 2, 2, 3))(await(flattenedList.flatMap(_.take(4).sequence())))
     }
-
-    import scala.concurrent.duration._
-    def await[T](f: Future[T]): T = Await.result(f, 1 second)
 
 }
